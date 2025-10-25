@@ -70,6 +70,7 @@ class AuthService:
                 )
 
             update_user = await UserDao.update(session, UserModel.id==user.id, obj_in={"is_verified": True})
+            await session.commit()
             return update_user
 
 
