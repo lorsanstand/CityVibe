@@ -3,11 +3,11 @@ from typing import List
 
 from fastapi import HTTPException, status
 
-from auth.utils import get_hashed_password
-from users.schemas import UserCreate, UserCreateDB, UserUpdateDB, UserUpdate, User
-from users.models import UserModel
-from users.dao import UserDao
-from database import async_session_maker
+from app.auth.utils import get_hashed_password
+from app.users.schemas import UserCreate, UserCreateDB, UserUpdateDB, UserUpdate, User
+from app.users.models import UserModel
+from app.users.dao import UserDao
+from app.database import async_session_maker
 
 
 
@@ -20,19 +20,18 @@ class UserService:
             if user_exist:
                 raise HTTPException(status.HTTP_409_CONFLICT, "User already exists")
 
-            new_user.is_verified = False
-            new_user.is_superuser = False
-
             db_user = await UserDao.add(
                 session,
                 UserCreateDB(
                     **new_user.model_dump(),
-                    hashed_password=get_hashed_password(new_user.password)
+                    hashed_password=get_hashed_password(new_user.password),
+                    is_superuser= False,
+                    is_verified = False
                 )
             )
 
             await session.commit()
-            return
+            return db_user
 
 
     @classmethod

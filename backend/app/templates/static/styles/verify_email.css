@@ -1,0 +1,130 @@
+/* ====== Общие стили и переменные ====== */
+:root {
+    --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+    --radius: 16px;
+    --transition: 0.3s ease;
+
+    /* Светлая тема */
+    --color-bg: #f7f9fb;
+    --color-card: #ffffff;
+    --color-text: #222;
+    --color-accent: #2563eb;
+    --color-shadow: rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-bg: #0f172a;
+        --color-card: #1e293b;
+        --color-text: #e2e8f0;
+        --color-accent: #3b82f6;
+        --color-shadow: rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* ====== Базовые настройки ====== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: var(--font-main);
+    background: var(--color-bg);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+}
+
+/* ====== Основная структура ====== */
+main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+/* ====== Карточка ====== */
+.card {
+    background: var(--color-card);
+    box-shadow: 0 10px 25px var(--color-shadow);
+    border-radius: var(--radius);
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px var(--color-shadow);
+}
+
+/* ====== Сообщение ====== */
+#message {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--color-text);
+}
+
+/* ====== Footer ====== */
+footer {
+    text-align: center;
+    padding: 1rem 0;
+    font-size: 0.9rem;
+    color: var(--color-text);
+    opacity: 0.7;
+}
+
+/* ====== Кнопки (если появятся) ====== */
+button {
+    margin-top: 1rem;
+    padding: 0.75rem 1.2rem;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--color-accent);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+}
+
+button:hover {
+    background: #1d4ed8;
+    transform: scale(1.02);
+}
+
+/* ====== Адаптивность ====== */
+@media (max-width: 768px) {
+    .card {
+        padding: 1.5rem;
+        max-width: 90%;
+    }
+
+    #message {
+        font-size: 1rem;
+    }
+
+    footer {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    main {
+        padding: 1rem;
+    }
+
+    .card {
+        padding: 1.2rem;
+        border-radius: 12px;
+    }
+
+    #message {
+        font-size: 0.95rem;
+    }
+}

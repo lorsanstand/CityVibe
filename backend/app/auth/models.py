@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import TIMESTAMP
 from sqlalchemy.sql import func
 
-from database import Base
+from app.database import Base
 
 class RefreshSessionModel(Base):
     __tablename__ = 'refresh_session'

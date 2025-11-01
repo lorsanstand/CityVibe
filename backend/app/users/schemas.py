@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 
 class UserBase(BaseModel):
@@ -12,7 +12,7 @@ class UserBase(BaseModel):
     is_superuser: Optional[bool] = Field(False)
 
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=20)
     password: str = Field(..., min_length=6, max_length=20)
@@ -30,8 +30,7 @@ class User(UserBase):
     is_verified: bool
     is_superuser: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreateDB(UserBase):

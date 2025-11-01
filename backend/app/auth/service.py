@@ -5,17 +5,17 @@ from typing import Optional
 import jwt
 from fastapi import HTTPException, status
 
-from auth.utils import is_valid_password
-from auth.schemas import Token, RefreshSessionCreate, RefreshSessionUpdate
-from auth.models import RefreshSessionModel
-from auth.dao import  RefreshSessionDAO
+from app.auth.utils import is_valid_password
+from app.auth.schemas import Token, RefreshSessionCreate, RefreshSessionUpdate
+from app.auth.models import RefreshSessionModel
+from app.auth.dao import  RefreshSessionDAO
 
-from users.models import UserModel
-from users.dao import UserDao
+from app.users.models import UserModel
+from app.users.dao import UserDao
 
-from database import  async_session_maker
-from config import settings
-from exceptions import InvalidTokenException, TokenExpiredException
+from app.database import  async_session_maker
+from app.config import settings
+from app.exceptions import InvalidTokenException, TokenExpiredException
 
 class AuthService:
     @classmethod
@@ -145,7 +145,7 @@ class AuthService:
     def _create_verify_email_token(cls, user_id: uuid.UUID) -> str:
         to_encode = {
             "sub": str(user_id),
-            "exp": datetime.utcnow() + timedelta(hours=settings.VERIFY_EMAIL_TOKEN_HOURS)
+            "exp": datetime.now(timezone.utc) + timedelta(hours=settings.VERIFY_EMAIL_TOKEN_HOURS)
         }
         encoded_jwt = jwt.encode(to_encode, settings.SECRET, algorithm=settings.ALGORITHMS)
         return f'{encoded_jwt}'

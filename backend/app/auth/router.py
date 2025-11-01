@@ -1,25 +1,32 @@
-from typing import List, Optional
-import uuid
-
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status, BackgroundTasks
 from fastapi.security import  OAuth2PasswordRequestForm
 
-from auth.service import AuthService
-from users.models import UserModel
-from users.service import UserService
-from users.schemas import User, UserCreate
-from auth.schemas import Token
-from auth.dependencies import get_current_active_user
+from app.auth.service import AuthService
+from app.auth.schemas import Token
+from app.auth.dependencies import get_current_active_user
+from app.users.models import UserModel
+from app.users.service import UserService
+from app.users.schemas import User, UserCreate
+from app.base_utils import send_verify_email
 
-from exceptions import InvalidCredentialsException
-from config import settings
+from app.exceptions import InvalidCredentialsException
+from app.config import settings
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(user: UserCreate) -> User:
-    return await UserService.register_new_user(user)
+async def register(user: UserCreate, bk: BackgroundTasks) -> User:
+    db_user = await UserService.register_new_user(user)
+    token = AuthService.create_verify_email_token(user_id=db_user.id)
+    bk.add_task(
+        func=send_verify_email,
+        username=db_user.username,
+        email=db_user.email,
+        url=f"http://127.0.0.1:8080/verify?token={token}"
+    )
+    return db_user
+
 
 
 @router.post("/login")
@@ -77,8 +84,8 @@ async def refresh_token(request: Request, response: Response) -> Token:
 
 @router.post("/verify")
 async def verify_user(token: str):
-    user = await AuthService.verify_user(token)
-    return user
+    await AuthService.verify_user(token)
+    return {"message": "email confirmed"}
 
 
 @router.post("/abort")

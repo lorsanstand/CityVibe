@@ -4,14 +4,14 @@ import uuid
 from fastapi import Depends, HTTPException, status
 import jwt
 
-from auth.utils import OAuth2PasswordBearerWithCookie
-from config import settings
-from users.models import UserModel
-from users.service import UserService
-from exceptions import InvalidTokenException
+from app.auth.utils import OAuth2PasswordBearerWithCookie
+from app.config import settings
+from app.users.models import UserModel
+from app.users.service import UserService
+from app.exceptions import InvalidTokenException
 
 
-oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/api/auth/login")
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> Optional[UserModel]:
     try:

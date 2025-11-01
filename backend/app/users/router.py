@@ -3,11 +3,11 @@ from typing import List
 
 from fastapi import APIRouter, Depends, Response
 
-from auth.dependencies import get_current_active_user, get_current_superuser
-from auth.service import AuthService
-from users.service import UserService
-from users.schemas import User, UserUpdate
-from users.models import UserModel
+from app.auth.dependencies import get_current_active_user, get_current_superuser
+from app.auth.service import AuthService
+from app.users.service import UserService
+from app.users.schemas import User, UserUpdate
+from app.users.models import UserModel
 
 router = APIRouter(prefix="/users")
 
