@@ -7,7 +7,7 @@ from app.auth.dependencies import get_current_active_user
 from app.users.models import UserModel
 from app.users.service import UserService
 from app.users.schemas import User, UserCreate
-from app.base_utils import send_verify_email
+from app.base_utils import Email
 
 from app.exceptions import InvalidCredentialsException
 from app.config import settings
@@ -20,10 +20,10 @@ async def register(user: UserCreate, bk: BackgroundTasks) -> User:
     db_user = await UserService.register_new_user(user)
     token = AuthService.create_verify_email_token(user_id=db_user.id)
     bk.add_task(
-        func=send_verify_email,
+        func=Email.send_verify_email,
         username=db_user.username,
         email=db_user.email,
-        url=f"http://127.0.0.1:8080/verify?token={token}"
+        url=f"{settings.URL}/verify?token={token}"
     )
     return db_user
 

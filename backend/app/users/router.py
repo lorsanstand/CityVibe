@@ -9,7 +9,7 @@ from app.users.service import UserService
 from app.users.schemas import User, UserUpdate
 from app.users.models import UserModel
 
-router = APIRouter(prefix="/users")
+router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("")
 async def get_users_list(

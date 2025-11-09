@@ -10,6 +10,7 @@ from alembic import context
 from app.database import Base, DATABASE_URL
 from app.auth.models import RefreshSessionModel
 from app.users.models import UserModel
+from app.events.models import EventModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import  DeclarativeBase
-from sqlalchemy import  MetaData, NullPool
+from sqlalchemy.orm import  DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import  MetaData, NullPool, func
 
 from app.config import settings
 from app.constants import DB_NAMING_CONVENTION
@@ -8,7 +10,9 @@ from app.constants import DB_NAMING_CONVENTION
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=DB_NAMING_CONVENTION)
-    pass
+
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
 
 if settings.MODE == "TEST":

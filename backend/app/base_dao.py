@@ -59,6 +59,7 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
             # logger.error(msg, extra={"table": cls.model.__tablename__}, exc_info=True)
             print(msg)
+            raise e
             return None
 
     @classmethod
