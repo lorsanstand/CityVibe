@@ -35,5 +35,6 @@ deploy-job:
   services:
     - docker:dind
   script:
+    - cat $DOTENV > .env
     - docker rm -f cityvibe_backend || true
     - docker compose up -d
