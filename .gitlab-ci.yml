@@ -3,9 +3,9 @@ stages:
 #  - test
   - deploy
 
-variables:
-  DOCKER_HOST: unix:///var/run/docker.sock
-  DOCKER_TLS_CERTDIR: ""  # отключаем TLS для простоты
+#variables:
+#  DOCKER_HOST: unix:///var/run/docker.sock
+#  DOCKER_TLS_CERTDIR: ""  # отключаем TLS для простоты
 
 build-job:
   stage: build
