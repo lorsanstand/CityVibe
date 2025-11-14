@@ -4,7 +4,7 @@ stages:
   - deploy
 
 variables:
-  DOCKER_HOST: unix:///var/run/docker.sock
+  DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""  # отключаем TLS для простоты
 
 build-job:
