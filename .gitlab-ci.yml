@@ -32,5 +32,6 @@ deploy-job:
  # image: docker:latest
   script:
     - cat $DOTENV > .env
+    - cat $DOTENV
     - docker rm -f cityvibe_backend || true
     - docker compose up -d
