@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     S3_ACCESS_KEY_ID: str
     S3_SECRET_ACCESS_KEY: str
     S3_BUCKET_NAME: str
+
+    CORS_ORIGINS: List[str]
+    CORS_HEADERS: List[str]
+    CORS_METHODS: List[str]
 
     model_config = SettingsConfigDict(env_file=".env")
 

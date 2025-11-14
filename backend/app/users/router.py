@@ -11,7 +11,7 @@ from app.users.models import UserModel
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.get("")
+@router.get("/")
 async def get_users_list(
         offset: int = 0,
         limit: int = 100,

@@ -42,7 +42,6 @@ class EventCreateDB(EventBase):
     photo_path: Optional[list] = Field(None)
     
 class EventUpdateDB(EventBase):
-    pass
     photo_path: Optional[list] = Field(None)
 
 
