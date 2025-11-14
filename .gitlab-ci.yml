@@ -14,6 +14,8 @@ build-job:
     - cd backend/
     - cat $DOTENV > .env
     - docker build -t cityvibe_backend .
+  environment:
+    - DB_PORT=5432
 
 # test-job:
 #   image: python:3.13
@@ -32,6 +34,5 @@ deploy-job:
  # image: docker:latest
   script:
     - cat $DOTENV > .env
-    - cat $DOTENV
     - docker rm -f cityvibe_backend || true
     - docker compose up -d
