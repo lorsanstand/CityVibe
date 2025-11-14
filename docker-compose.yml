@@ -10,6 +10,8 @@ services:
       sh -c "alembic upgrade head && exec python -m app.main"
     networks:
       - app-network
+    environment:
+      - DB_PORT=5432
 
   database:
     image: postgres:latest
