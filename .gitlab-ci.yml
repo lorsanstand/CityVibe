@@ -3,27 +3,37 @@ stages:
 #  - test
   - deploy
 
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""  # отключаем TLS для простоты
+
 build-job:
   stage: build
+  image: docker:latest
+  services:
+    - docker:dind
   script:
     - cd backend/
     - cat $DOTENV > .env
     - docker build -t cityvibe_backend .
 
-#test-job:
-#  image: python:3.13
-#  stage: test
-#  script:
-#    - cd backend/
-#    - cat $TESTENV > .env
-#    - pip install -r requirements.txt
-#    - alembic upgrade head
-#    - pytest -v -s
-#    - alembic downgrade base
-#    - echo "SUCCESSFULL"
+# test-job:
+#   image: python:3.13
+#   stage: test
+#   script:
+#     - cd backend/
+#     - cat $TESTENV > .env
+#     - pip install -r requirements.txt
+#     - alembic upgrade head
+#     - pytest -v -s
+#     - alembic downgrade base
+#     - echo "SUCCESSFULL"
 
 deploy-job:
   stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
   script:
     - docker rm -f cityvibe_backend || true
     - docker compose up -d
