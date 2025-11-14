@@ -4,14 +4,12 @@ stages:
   - deploy
 
 variables:
-  DOCKER_HOST: tcp://docker:2375
+  DOCKER_HOST: unix:///var/run/docker.sock
   DOCKER_TLS_CERTDIR: ""  # отключаем TLS для простоты
 
 build-job:
   stage: build
   image: docker:latest
-  services:
-    - docker:dind
   script:
     - cd backend/
     - cat $DOTENV > .env
@@ -32,8 +30,6 @@ build-job:
 deploy-job:
   stage: deploy
   image: docker:latest
-  services:
-    - docker:dind
   script:
     - cat $DOTENV > .env
     - docker rm -f cityvibe_backend || true
