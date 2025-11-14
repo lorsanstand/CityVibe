@@ -1,0 +1,29 @@
+stages:
+  - build
+#  - test
+  - deploy
+
+build-job:
+  stage: build
+  script:
+    - cd backend/
+    - cat $DOTENV > .env
+    - docker build -t cityvibe_backend .
+
+#test-job:
+#  image: python:3.13
+#  stage: test
+#  script:
+#    - cd backend/
+#    - cat $TESTENV > .env
+#    - pip install -r requirements.txt
+#    - alembic upgrade head
+#    - pytest -v -s
+#    - alembic downgrade base
+#    - echo "SUCCESSFULL"
+
+deploy-job:
+  stage: deploy
+  script:
+    - docker rm -f cityvibe_backend || true
+    - docker compose up -d
