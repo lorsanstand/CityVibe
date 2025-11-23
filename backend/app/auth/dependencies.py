@@ -41,3 +41,8 @@ async def get_current_active_user(current_user: UserModel = Depends(get_current_
     if not current_user.is_active:
         raise  HTTPException(status.HTTP_403_FORBIDDEN, detail="User is not active")
     return current_user
+
+async def get_current_organizer(current_user: UserModel = Depends(get_current_user)) -> UserModel:
+    if not current_user.is_organizer:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Not enough privileges")
+    return current_user

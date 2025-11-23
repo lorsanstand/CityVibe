@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     is_active: Optional[bool] = Field(True)
     is_verified: Optional[bool] = Field(False)
     is_superuser: Optional[bool] = Field(False)
+    is_organizer: Optional[bool] = Field(False)
 
 
 class UserCreate(BaseModel):
@@ -29,6 +30,7 @@ class User(UserBase):
     is_active: bool
     is_verified: bool
     is_superuser: bool
+    is_organizer: bool
 
     model_config = ConfigDict(from_attributes=True)
 

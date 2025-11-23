@@ -46,7 +46,8 @@ class UserService:
                 username=db_user.username,
                 is_verified=db_user.is_verified,
                 is_active=db_user.is_active,
-                is_superuser=db_user.is_superuser
+                is_superuser=db_user.is_superuser,
+                is_organizer=db_user.is_organizer
             )
 
 

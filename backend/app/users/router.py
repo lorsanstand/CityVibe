@@ -15,7 +15,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def get_users_list(
         offset: int = 0,
         limit: int = 100,
-        current_user = Depends(get_current_active_user)
+        current_superuser_user: UserModel = Depends(get_current_superuser)
 ) -> List[User]:
     users_list = await UserService.get_users_list(offset=offset, limit=limit)
     return users_list

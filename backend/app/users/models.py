@@ -1,9 +1,7 @@
-from datetime import datetime
 import uuid
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
+from sqlalchemy import false
 
 from app.database import Base
 
@@ -18,3 +16,4 @@ class UserModel(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_superuser: Mapped[bool] = mapped_column(default=False)
+    is_organizer: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
