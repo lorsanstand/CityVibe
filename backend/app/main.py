@@ -17,7 +17,9 @@ api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(events_router)
 
-app = FastAPI()
+app = FastAPI(
+    title="CityVibe API"
+)
 
 app.add_middleware(
     CORSMiddleware,

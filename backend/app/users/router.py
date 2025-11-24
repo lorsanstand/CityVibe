@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, Response
 
 from app.auth.dependencies import get_current_active_user, get_current_superuser
 from app.auth.service import AuthService
-from app.users.service import UserService
-from app.users.schemas import User, UserUpdate
+from app.users.service import UserService, UserEventFavoritesService
+from app.users.schemas import User, UserUpdate, UserEventFavoritesCreate, UserEventFavorites
 from app.users.models import UserModel
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -70,3 +70,29 @@ async def delete_user(
 ):
     await UserService.delete_user_from_superuser(user_id)
     return {"message": "User was deleted"}
+
+
+@router.post("/me/favorites")
+async def add_new_favorite(
+        event: UserEventFavoritesCreate,
+        current_user: UserModel = Depends(get_current_active_user)
+) -> UserEventFavorites:
+    return await UserEventFavoritesService.add_new_favorite(current_user.id, event.event_id)
+
+
+@router.get("/me/favorites")
+async def get_favorites(
+        offset: int,
+        limit: int,
+        current_user: UserModel = Depends(get_current_active_user),
+) -> List[UserEventFavorites]:
+    return await UserEventFavoritesService.get_favorites(current_user.id, offset, limit)
+
+
+@router.delete("/me/favorites{event_id}")
+async def delete_favorite(
+        event_id: uuid.UUID,
+        current_user: UserModel = Depends(get_current_active_user)
+) -> dict:
+    await UserEventFavoritesService.delete_favorite(current_user.id, event_id)
+    return {"message": "The favorites was successfully deleted"}

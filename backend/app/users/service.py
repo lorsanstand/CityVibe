@@ -4,9 +4,9 @@ from typing import List
 from fastapi import HTTPException, status
 
 from app.auth.utils import get_hashed_password
-from app.users.schemas import UserCreate, UserCreateDB, UserUpdateDB, UserUpdate, User
+from app.users.schemas import UserCreate, UserCreateDB, UserUpdateDB, UserUpdate, User, UserEventFavoritesCreateDB, UserEventFavorites
 from app.users.models import UserModel
-from app.users.dao import UserDao
+from app.users.dao import UserDao, UserEventFavoritesDao
 from app.database import async_session_maker
 
 
@@ -121,4 +121,40 @@ class UserService:
     async def delete_user_from_superuser(cls, user_id: uuid.UUID):
         async with async_session_maker() as session:
             await UserDao.delete(session, UserModel.id == user_id)
+            await session.commit()
+
+
+class UserEventFavoritesService:
+    @classmethod
+    async def add_new_favorite(cls, user_id: uuid.UUID, event_id: uuid.UUID) -> UserEventFavorites:
+        async with async_session_maker() as session:
+            favorite_exist = await UserEventFavoritesDao.find_one_or_none(session, user_id=user_id, event_id=event_id)
+
+            if favorite_exist:
+                raise HTTPException(status.HTTP_409_CONFLICT, "The event has already been added to favorites")
+
+            db_favorites = await UserEventFavoritesDao.add(
+                session,
+                obj_in={
+                    "user_id": user_id,
+                    "event_id": event_id
+                }
+            )
+            await session.commit()
+        return db_favorites
+
+
+    @classmethod
+    async def get_favorites(cls, user_id: uuid.UUID, offset: int = 0, limit: int = 10) -> List[UserEventFavorites]:
+        async with async_session_maker() as session:
+            db_favorites = await UserEventFavoritesDao.find_all(session, offset, limit, user_id=user_id)
+            print(db_favorites)
+            print(user_id)
+        return db_favorites
+
+
+    @classmethod
+    async def delete_favorite(cls, user_id: uuid.UUID, event_id: uuid.UUID):
+        async with async_session_maker() as session:
+            await UserEventFavoritesDao.delete(session, user_id=user_id, event_id=event_id)
             await session.commit()

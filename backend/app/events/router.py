@@ -107,7 +107,7 @@ async def edit_review(
 
 
 @router.delete("/{event_id}/reviews")
-async def delete_reviews(
+async def delete_review(
         event_id: uuid.UUID,
         user: UserModel = Depends(get_current_active_user)
 ) -> dict:

@@ -41,3 +41,24 @@ class UserCreateDB(UserBase):
 
 class UserUpdateDB(UserBase):
     hashed_password: str
+
+
+class UserEventFavoritesBase(BaseModel):
+    event_id: Optional[uuid.UUID] = Field(None)
+    user_id: Optional[uuid.UUID] = Field(None)
+
+
+class UserEventFavorites(UserEventFavoritesBase):
+    id: Optional[uuid.UUID] = Field(None)
+
+
+class UserEventFavoritesCreate(BaseModel):
+    event_id: uuid.UUID = Field(...)
+
+
+class UserEventFavoritesCreateDB(UserEventFavoritesBase):
+    pass
+
+
+class UserEventFavoritesUpdateDB(UserEventFavoritesBase):
+    pass

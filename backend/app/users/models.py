@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import false
+from sqlalchemy import false, ForeignKey
 
 from app.database import Base
 
@@ -17,3 +17,11 @@ class UserModel(Base):
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_superuser: Mapped[bool] = mapped_column(default=False)
     is_organizer: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
+
+
+class UserEventFavoritesModel(Base):
+    __tablename__ = "user_event_favorite"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, index=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), index=True)
