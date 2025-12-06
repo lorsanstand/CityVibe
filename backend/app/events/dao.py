@@ -9,6 +9,9 @@ from app.events.schemas import EventCreateDB, EventUpdateDB
 from app.events.models import EventReviewsModel
 from app.events.schemas import EventReviewsCreateDB, EventReviewsUpdateDB
 
+from app.events.models import EventPhotoModel
+from app.events.schemas import EventPhotoCreateDB, EventPhotoUpdateDB
+
 
 class EventDao(BaseDAO[EventModel, EventCreateDB, EventUpdateDB]):
     model = EventModel
@@ -27,3 +30,7 @@ class EventReviewsDao(BaseDAO[EventReviewsModel, EventReviewsCreateDB, EventRevi
         stmt = select(func.avg(EventReviewsModel.rating)).filter(*filter).filter_by(**filter_by)
         avg_rating = await session.execute(stmt)
         return avg_rating.scalar()
+
+
+class EventPhotoDao(BaseDAO[EventPhotoModel, EventPhotoCreateDB, EventPhotoUpdateDB]):
+    model = EventPhotoModel

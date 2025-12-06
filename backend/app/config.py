@@ -27,7 +27,16 @@ class Settings(BaseSettings):
     @property
     def TEST_DATABASE_URL(self) -> str:
         return f'postgresql+asyncpg://{self.TEST_DB_USER}:{self.TEST_DB_PASS}@{self.TEST_DB_HOST}:{self.TEST_DB_PORT}/{self.TEST_DB_NAME}'
+    
 
+    RMQ_HOST: str
+    RMQ_USER: str
+    RMQ_PASS: str
+    RMQ_PORT: int
+
+    @property
+    def BROKER_URL(self) -> str:
+        return f"amqp://{self.RMQ_USER}:{self.RMQ_PASS}@{self.RMQ_HOST}:{self.RMQ_PORT}//"
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30

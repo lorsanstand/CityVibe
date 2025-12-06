@@ -39,14 +39,16 @@ class EventCreate(EventBase):
     
 class EventCreateDB(EventBase):
     user_id: Optional[uuid.UUID] = Field(None)
-    photo_path: Optional[list] = Field(None)
+    # photo_path: Optional[list] = Field(None)
     
 class EventUpdateDB(EventBase):
-    photo_path: Optional[list] = Field(None)
+    # photo_path: Optional[list] = Field(None)
+    pass
 
 
 class EventUpdate(EventBase):
-    photo_path: Optional[list] = Field(None)
+    # photo_path: Optional[list] = Field(None)
+    pass
 
 
 class Event(EventCreate):
@@ -55,6 +57,7 @@ class Event(EventCreate):
     photo_path: Optional[list] = Field(None)
     average_rating: Optional[float] = Field(None)
     count_reviews: Optional[int] = Field(None)
+
 
 class EventSearch(BaseModel):
     name: Optional[str] = Field(None)
@@ -93,3 +96,32 @@ class EventReviews(EventReviewsBase):
     id: Optional[uuid.UUID] = Field(None)
     event_id: Optional[uuid.UUID] = Field(None)
     user_id: Optional[uuid.UUID] = Field(None)
+
+
+class EventPhotoBase(BaseModel):
+    url: Optional[str] = Field(None)
+    event_id: Optional[uuid.UUID] = Field(None)
+    object_name: Optional[str] = Field(None)
+
+
+# class EventPhotoCreate(EventPhotoBase):
+#     url: str = Field(...)
+#     event_id: uuid.UUID = Field(...)
+#
+#     model_config = ConfigDict(from_attributes=True)
+
+
+class EventPhotoUpdate(EventPhotoBase):
+    pass
+
+
+class EventPhotoCreateDB(EventPhotoBase):
+    pass
+
+
+class EventPhotoUpdateDB(EventPhotoBase):
+    pass
+
+
+class EventPhoto(EventPhotoBase):
+    id: Optional[uuid.UUID] = Field(None)

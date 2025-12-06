@@ -1,63 +1,12 @@
-from datetime import datetime, timezone
 from contextlib import asynccontextmanager
-
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from string import Template
+from typing import AsyncIterator
 
 from aiobotocore.session import get_session
+from types_aiobotocore_s3 import S3Client as S3ClientAnnotated
 from botocore.exceptions import ClientError
 from fastapi import HTTPException, status
-import smtplib
 
 from app.config import settings
-
-class Email:
-    @classmethod
-    def render_template_from_file(cls, path: str, **context):
-        with open(path, "r", encoding="utf-8") as file:
-            tpl = Template(file.read())
-        return  tpl.safe_substitute(**context)
-
-
-    @classmethod
-    def send_verify_email(cls, username: str, email: str, url: str):
-        with smtplib.SMTP_SSL(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
-            server.login(settings.SMTP_EMAIL, settings.SMTP_PASSWORD)
-
-            msg = MIMEMultipart()
-            msg["From"] = settings.SMTP_EMAIL
-            msg["To"] = email
-            msg["Subject"] = "Подтверждение регистрации"
-
-            # Тело письма — осмысленное и форматированное
-            body = f"""
-            Здравствуйте, {username}!
-    
-            Для подтверждения вашей регистрации перейдите по ссылке:
-            {url}
-    
-            Если вы не создавали аккаунт — просто проигнорируйте это письмо.
-    
-            С уважением,  
-            Команда CityVibe
-                """
-
-            html = cls.render_template_from_file(
-                "app/templates/template_verify_email.html",
-                user_name=username,
-                confirmation_url=url,
-                expiry_minutes=120,
-                site_name="CityVibe",
-                site_url="https://example.com",
-                support_email="support@example.com",
-                year=datetime.now(timezone.utc).year
-            )
-
-            msg.attach(MIMEText(html, "html", "utf-8"))
-            msg.attach(MIMEText(body, "plain", "utf-8"))
-
-            server.send_message(msg, settings.SMTP_EMAIL, email)
 
 
 class S3Client:
@@ -75,12 +24,13 @@ class S3Client:
         )
         self.endpoint_url = endpoint_url
         self.bucket_name = bucket_name
-        self.session = get_session()
 
     @asynccontextmanager
-    async def _get_client(self):
-        async with self.session.create_client("s3", **self.config) as client:
-            yield client # AioBaseClient
+    async def _get_client(self) -> AsyncIterator[S3ClientAnnotated]:
+        session = get_session()
+        async with session.create_client("s3", **self.config) as raw_client:
+            client: S3ClientAnnotated = raw_client
+            yield client
 
 
     async def upload_file(
@@ -105,8 +55,6 @@ class S3Client:
         return f"{self.endpoint_url}/{self.bucket_name}/{object_name}"
 
 
-
-
     async def download_file(
             self,
             object_name: str
@@ -124,6 +72,7 @@ class S3Client:
         except Exception:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Unexpected S3 error")
 
+
     async def delete_file(self, object_name: str) -> None:
         try:
             async with self._get_client() as client:
@@ -137,9 +86,27 @@ class S3Client:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Unexpected S3 error")
 
 
-s3_client = S3Client(
-    access_key=settings.S3_ACCESS_KEY_ID,
-    secret_key=settings.S3_SECRET_ACCESS_KEY,
-    endpoint_url=settings.S3_URL,
-    bucket_name=settings.S3_BUCKET_NAME
-)
+    async def delete_files(self, object_names: list[str]) -> None:
+        if not object_names:
+            return
+
+        try:
+            async with self._get_client() as client:
+                delete_payload = {
+                    "Objects": [{'Key': name} for name in object_names],
+                    "Quiet": True
+                }
+                await client.delete_objects(
+                    Bucket=self.bucket_name,
+                    Delete=delete_payload
+                )
+        except ClientError:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="S3 batch delete error"
+            )
+        except Exception:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Unexpected S3 error"
+            )

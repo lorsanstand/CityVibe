@@ -25,7 +25,7 @@ class EventModel(Base):
     latitude: Mapped[float] = mapped_column(index=True)
     longitude: Mapped[float] = mapped_column(index=True)
     capacity: Mapped[int] = mapped_column(index=True)
-    photo_path: Mapped[List[str]] = mapped_column(ARRAY(String), nullable=True)
+    # photo_path: Mapped[List[str]] = mapped_column(ARRAY(String), nullable=True)
     environment: Mapped[EventEnvironment] = mapped_column(index=True)
     start: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True),index=True)
     end: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), index=True)
@@ -45,3 +45,12 @@ class EventReviewsModel(Base):
     rating: Mapped[int] = mapped_column(nullable=False)
     event_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), index=True)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), index=True)
+
+
+class EventPhotoModel(Base):
+    __tablename__ = "events_photo"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    url: Mapped[str] = mapped_column(nullable=False, unique=True)
+    object_name: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
+    event_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), index=True)

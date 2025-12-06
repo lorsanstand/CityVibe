@@ -1,15 +1,15 @@
-from typing import List, Optional, Any
-import uuid, time
-import re
+from typing import List, Optional
+import uuid
 
 from fastapi import HTTPException, status
 
-from app.events.dao import EventDao, EventReviewsDao
-from app.events.models import EventModel, EventReviewsModel
+from app.events.dao import EventDao, EventReviewsDao, EventPhotoDao
+from app.events.models import EventModel, EventReviewsModel, EventPhotoModel
 from app.events.schemas import EventCreate, Event, EventCreateDB, EventUpdate, EventUpdateDB, EventSearch
 from app.events.schemas import EventReviews, EventReviewsUpdateDB, EventReviewsCreateDB, EventReviewsCreate, EventReviewsUpdate
+from app.events.schemas import EventPhoto
 from app.database import async_session_maker
-from app.base_utils import s3_client
+from app.tasks.S3_tasks import EventPhotoTasks
 
 
 class EventService:
@@ -20,7 +20,6 @@ class EventService:
                 session,
                 address=new_event.address
             )
-
             if event_exist:
                 raise HTTPException(status.HTTP_409_CONFLICT, detail="Event the already")
 
@@ -37,41 +36,68 @@ class EventService:
 
 
     @classmethod
-    async def upload_photo(cls, event_uuid: uuid.UUID, photos: List[bytes], user_id: uuid.UUID) -> List[str]:
-        photo_path = []
-
+    async def upload_photo(cls, event_uuid: uuid.UUID, photos: List[bytes], user_id: uuid.UUID):
         async with async_session_maker() as session:
             db_event = await EventDao.find_one_or_none(
                 session,
                 id=event_uuid
             )
-
             if not db_event:
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Event not found")
 
             if db_event.user_id != user_id:
                 raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Insufficient rights to modify the event")
 
-            for photo in photos:
-                url = await s3_client.upload_file(
-                    file=photo,
-                    object_name=f"{db_event.address.replace(" ", "_")}_{int(time.time())}_{uuid.uuid4().hex}.png",
-                    content_type="image/png"
-                )
-                photo_path.append(url)
+            count_photo = await EventPhotoDao.count(session, EventPhotoModel.event_id==db_event.id)
 
-            if db_event.photo_path is None:
-                db_photo_path = []
-            else:
-                db_photo_path = db_event.photo_path
+            if count_photo >= 10:
+                raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Photo limit exceeded")
 
-            await EventDao.update(
-                session,
-                EventModel.id == db_event.id,
-                obj_in={"photo_path": photo_path + db_photo_path}
+            EventPhotoTasks.add_new_photos_task.delay(
+                event_uuid=db_event.id,
+                photos=photos
             )
-            await session.commit()
-            return photo_path + db_photo_path
+
+
+    @classmethod
+    async def get_photos(cls, event_uuid: uuid.UUID, offset: int, limit: int) -> List[EventPhoto]:
+        async with async_session_maker() as session:
+            db_event = await EventDao.find_one_or_none(
+                session,
+                id=event_uuid
+            )
+            if not db_event:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+            db_photo = await EventPhotoDao.find_all(
+                session,
+                offset,
+                limit,
+                EventPhotoModel.event_id==db_event.id
+            )
+            return db_photo
+
+
+
+    @classmethod
+    async def delete_photo(cls, event_uuid: uuid.UUID, photo_uuid: uuid.UUID, user_id: uuid.UUID):
+        async with async_session_maker() as session:
+            db_event = await EventDao.find_one_or_none(
+                session,
+                id=event_uuid
+            )
+            if not db_event:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+            if db_event.user_id != user_id:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Insufficient rights to modify the event")
+
+            db_photo = await EventPhotoDao.find_one_or_none(session, id=photo_uuid)
+
+            if db_photo is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Photo not found")
+
+            EventPhotoTasks.delete_photos_task.delay(photo_names=[db_photo.object_name])
 
 
     @classmethod
@@ -123,8 +149,6 @@ class EventService:
             if db_event.user_id != user_id:
                 raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Insufficient rights to modify the event")
 
-            old_photo_path = db_event.photo_path
-
             update_event = await EventDao.update(
                 session,
                 EventModel.id == event_uuid,
@@ -132,12 +156,6 @@ class EventService:
                     **new_event.model_dump()
                 )
             )
-
-            delete_photo = list(set(old_photo_path) - set(new_event.photo_path))
-
-            for photo in delete_photo:
-                protocol, url, bucket, name = re.split(f"://|/", photo)
-                await s3_client.delete_file(name)
 
             await session.commit()
             return update_event
@@ -151,9 +169,11 @@ class EventService:
             if db_event is None:
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-            for photo in db_event.photo_path:
-                protocol, url, bucket, name = re.split(f"://|/", photo)
-                await s3_client.delete_file(name)
+            db_photos = await EventPhotoDao.find_all(session, 0, None, EventPhotoModel.event_id==db_event.id)
+
+            photo_names = [photo.object_name for photo in db_photos]
+
+            EventPhotoTasks.delete_photos_task.delay(photo_names=photo_names)
 
             await EventDao.delete(session, id=db_event.id)
             await session.commit()

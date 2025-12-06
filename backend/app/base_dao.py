@@ -28,11 +28,15 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             cls,
             session: AsyncSession,
             offset: int = 30,
-            limit: int = 100,
+            limit: Optional[int] = 100,
             *filter,
             **filter_by
     ) -> List[ModelType]:
-        stmt = select(cls.model).filter(*filter).filter_by(**filter_by).offset(offset).limit(limit)
+        stmt = select(cls.model).filter(*filter).filter_by(**filter_by).offset(offset)
+
+        if limit is not None:
+            stmt = stmt.limit(limit)
+
         result = await session.execute(stmt)
         return result.scalars().all() #type: ignore
 
