@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     CORS_HEADERS: List[str]
     CORS_METHODS: List[str]
 
+    FIRST_SUPERUSER_EMAIL: str
+    FIRST_SUPERUSER_PASS: str
+
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()

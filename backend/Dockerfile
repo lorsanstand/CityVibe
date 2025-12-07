@@ -6,10 +6,10 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY .env .
-
 COPY alembic.ini .
 
 COPY app/ ./app
+
+COPY scripts/ ./scripts
 
 CMD ["python", "-m", "app.main"]

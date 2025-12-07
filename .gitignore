@@ -1,0 +1,7 @@
+.venv
+.env
+__pycache__
+test.py
+.idea
+home-compose.yml
+prod.env
