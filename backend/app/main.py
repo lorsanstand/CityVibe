@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Request
+from fastapi import FastAPI, APIRouter, Request, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +8,7 @@ from app.auth.router import router as auth_router
 from app.users.router import router as users_router
 from app.events.router import router as events_router
 from app.config import settings
+from app.auth.dependencies import get_current_superuser
 
 api_router = APIRouter(prefix="/api")
 
@@ -28,6 +29,10 @@ app.add_middleware(
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
 )
+
+@app.post("/push/send")
+async def send_push(message: str, header: str, current_user = Depends(get_current_superuser)) -> dict:
+    return {"message": "successfully"}
 
 app.include_router(api_router)
 app.mount('/static', StaticFiles(directory='app/templates/static'), name='static')
