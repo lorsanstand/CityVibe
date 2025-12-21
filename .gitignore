@@ -1,4 +1,9 @@
 .venv
 .env
 __pycache__
-test
+test.py
+.idea
+home-compose.yml
+prod.env
+.pytest_cache
+.idea

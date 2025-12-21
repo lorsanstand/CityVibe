@@ -1,0 +1,9 @@
+stages:
+  - deploy
+
+deploy-job:
+  stage: deploy
+  script:
+    - cat $DOTENV > .env
+    - docker compose build --no-cache prestart backend celery flower
+    - docker compose up -d
