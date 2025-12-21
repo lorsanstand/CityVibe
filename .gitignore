@@ -5,3 +5,5 @@ test.py
 .idea
 home-compose.yml
 prod.env
+.pytest_cache
+.idea
