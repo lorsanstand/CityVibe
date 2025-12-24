@@ -1,13 +1,15 @@
 from typing import Generic, Any, Dict, List, Optional, TypeVar, Union
+from pydantic import BaseModel
+import logging
 
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.sql import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pydantic import BaseModel
-
 from app.database import Base
+
+log = logging.getLogger(__name__)
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -57,12 +59,11 @@ class BaseDAO(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return result.scalars().first()
         except (SQLAlchemyError, Exception) as e:
             if isinstance(e, SQLAlchemyError):
-                msg = "Database Exc: Cannot insert data into table"
+                msg: str = "Database Exc: Cannot insert data into table"
             elif isinstance(e, Exception):
-                msg = "Unknown Exc: Cannot insert data into table"
+                msg: str = "Unknown Exc: Cannot insert data into table"
 
-            # logger.error(msg, extra={"table": cls.model.__tablename__}, exc_info=True)
-            print(msg)
+            log.error(msg, extra={"table": cls.model.__tablename__}, exc_info=True)
             raise e
             return None
 

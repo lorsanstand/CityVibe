@@ -1,4 +1,5 @@
 import uuid
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -16,6 +17,8 @@ from app.users.dao import UserDao
 from app.database import  async_session_maker
 from app.config import settings
 from app.exceptions import InvalidTokenException, TokenExpiredException
+
+log = logging.getLogger(__name__)
 
 class AuthService:
     @classmethod
@@ -36,6 +39,7 @@ class AuthService:
                 )
             )
             await session.commit()
+        log.info("Token created for user", extra={"user_id": str(user_id)})
         return Token(access_token=access_token, refresh_token=refresh_token, token_type='bearer')
 
 
@@ -52,18 +56,22 @@ class AuthService:
             expire_time =  payload.get("exp")
 
             if user_id is None:
+                log.warning("Invalid token: user_id is None")
                 raise InvalidTokenException
 
             if datetime.fromtimestamp(expire_time, timezone.utc) <= datetime.now(timezone.utc):
+                log.warning("Token expired", extra={"user_id": user_id})
                 raise TokenExpiredException
 
-        except Exception:
+        except Exception as e:
+            log.error(f"Token verification failed: {str(e)}")
             raise InvalidTokenException
 
         async with async_session_maker() as session:
             user = await UserDao.find_one_or_none(session, id=user_id)
 
             if user is None:
+                log.error("User not found during verification", extra={"user_id": user_id})
                 raise HTTPException(
                     status.HTTP_404_NOT_FOUND,
                     detail="User not found"
@@ -71,6 +79,7 @@ class AuthService:
 
             update_user = await UserDao.update(session, UserModel.id==user.id, obj_in={"is_verified": True})
             await session.commit()
+            log.info("User verified", extra={"user_id": user_id})
             return update_user
 
 
@@ -79,6 +88,7 @@ class AuthService:
         async with async_session_maker() as session:
             await RefreshSessionDAO.delete(session, RefreshSessionModel.user_id == user_id)
             await session.commit()
+        log.info("All sessions aborted for user", extra={"user_id": str(user_id)})
 
 
     @classmethod
@@ -86,7 +96,9 @@ class AuthService:
         async with async_session_maker() as session:
             user = await UserDao.find_one_or_none(session, email=email)
         if user and is_valid_password(password, str(user.hashed_password)):
+            log.info("User authenticated successfully", extra={"email": email})
             return user
+        log.warning("Authentication failed", extra={"email": email})
         return None
 
 
@@ -96,13 +108,16 @@ class AuthService:
             refresh_session = await RefreshSessionDAO.find_one_or_none(session, RefreshSessionModel.refresh_token == token)
 
             if refresh_session is None:
+                log.warning("Refresh token not found")
                 raise InvalidTokenException
             if datetime.now(timezone.utc) >= refresh_session.created_at + timedelta(seconds=refresh_session.expires_in):
                 await RefreshSessionDAO.delete(id=refresh_session.id)
+                log.warning("Refresh token expired", extra={"user_id": str(refresh_session.user_id)})
                 raise TokenExpiredException
 
             user = await UserDao.find_one_or_none(session, id=refresh_session.user_id)
             if user is None:
+                log.error("User not found during token refresh", extra={"user_id": str(refresh_session.user_id)})
                 raise InvalidTokenException
 
             access_token = cls._create_access_token(user.id)
@@ -119,6 +134,7 @@ class AuthService:
                 )
             )
             await session.commit()
+        log.info("Token refreshed for user", extra={"user_id": str(user.id)})
         return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
 
@@ -128,6 +144,7 @@ class AuthService:
             refresh_session = await RefreshSessionDAO.find_one_or_none(session, RefreshSessionModel.refresh_token == token)
             if refresh_session:
                 await RefreshSessionDAO.delete(session, id=refresh_session.id)
+                log.info("User logged out", extra={"user_id": str(refresh_session.user_id)})
             await session.commit()
 
 

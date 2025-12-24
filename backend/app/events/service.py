@@ -1,5 +1,6 @@
 from typing import List, Optional
 import uuid
+import logging
 
 from fastapi import HTTPException, status
 
@@ -10,6 +11,8 @@ from app.events.schemas import EventReviews, EventReviewsUpdateDB, EventReviewsC
 from app.events.schemas import EventPhoto
 from app.database import async_session_maker
 from app.tasks.S3_tasks import EventPhotoTasks
+
+log = logging.getLogger(__name__)
 
 
 class EventService:
@@ -32,6 +35,7 @@ class EventService:
             )
 
             await session.commit()
+            log.info("The event has registered", extra={"user_id": db_event.id})
             return db_event
 
 
@@ -57,6 +61,7 @@ class EventService:
                 event_uuid=db_event.id,
                 photos=photos
             )
+            log.info("Photo upload started")
 
 
     @classmethod
@@ -75,6 +80,7 @@ class EventService:
                 limit,
                 EventPhotoModel.event_id==db_event.id
             )
+            log.debug("Photos fetched")
             return db_photo
 
 
@@ -98,6 +104,7 @@ class EventService:
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Photo not found")
 
             EventPhotoTasks.delete_photos_task.delay(photo_names=[db_photo.object_name])
+            log.debug("Delete photo", extra={"photo_id": photo_uuid})
 
 
     @classmethod
@@ -106,8 +113,10 @@ class EventService:
             db_event = await EventDao.find_one_or_none(session, id=event_uuid)
 
             if db_event is None:
+                log.warning("Event not found", extra={"event_id": str(event_uuid)})
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Event not found")
 
+            log.debug("Event fetched", extra={"event_id": str(event_uuid)})
             return db_event
 
     @classmethod
@@ -135,6 +144,7 @@ class EventService:
                 *filters
             )
 
+            log.debug("Events fetched", extra={"count": len(db_events), "offset": offset, "limit": limit})
             return db_events
 
 
@@ -144,9 +154,11 @@ class EventService:
             db_event = await EventDao.find_one_or_none(session, id=event_uuid)
 
             if db_event is None:
+                log.warning("Event not found for update", extra={"event_id": str(event_uuid)})
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Event not found")
 
             if db_event.user_id != user_id:
+                log.warning("User does not have permission to update event", extra={"event_id": str(event_uuid), "user_id": str(user_id)})
                 raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Insufficient rights to modify the event")
 
             update_event = await EventDao.update(
@@ -158,6 +170,7 @@ class EventService:
             )
 
             await session.commit()
+            log.info("Event updated", extra={"event_id": str(event_uuid), "user_id": str(user_id)})
             return update_event
 
 
@@ -167,6 +180,7 @@ class EventService:
             db_event = await EventDao.find_one_or_none(session, id=event_uuid, user_id=user_id)
 
             if db_event is None:
+                log.warning("Event not found for deletion", extra={"event_id": str(event_uuid), "user_id": str(user_id)})
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Event not found")
 
             db_photos = await EventPhotoDao.find_all(session, 0, None, EventPhotoModel.event_id==db_event.id)
@@ -177,6 +191,7 @@ class EventService:
 
             await EventDao.delete(session, id=db_event.id)
             await session.commit()
+            log.info("Event deleted", extra={"event_id": str(event_uuid), "user_id": str(user_id), "photos_count": len(photo_names)})
 
 
 class EventReviewsService:
@@ -191,6 +206,7 @@ class EventReviewsService:
             exist_review = await EventReviewsDao.find_one_or_none(session, user_id=user_id, event_id=event_id)
 
             if exist_review:
+                log.warning("Review already exists", extra={"user_id": str(user_id), "event_id": str(event_id)})
                 raise HTTPException(status.HTTP_409_CONFLICT, detail="Review the already")
 
             db_review = await EventReviewsDao.add(
@@ -210,6 +226,7 @@ class EventReviewsService:
                         "count_reviews": await EventReviewsDao.count(session, event_id=event_id)}
             )
             await session.commit()
+            log.info("Review created", extra={"user_id": str(user_id), "event_id": str(event_id), "rating": new_review.rating})
         return db_review
 
 
@@ -235,6 +252,7 @@ class EventReviewsService:
                 limit,
                 *filters
             )
+        log.debug("Reviews fetched", extra={"count": len(db_reviews), "user_id": str(user_id) if user_id else None, "event_id": str(event_id) if event_id else None})
         return db_reviews
 
 
@@ -244,6 +262,7 @@ class EventReviewsService:
             db_event = await EventReviewsDao.find_one_or_none(session, user_id=user_id, event_id=event_id)
 
             if not db_event:
+                log.warning("Review not found for update", extra={"user_id": str(user_id), "event_id": str(event_id)})
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="review not found")
 
             db_edit_event = await EventReviewsDao.update(
@@ -261,6 +280,7 @@ class EventReviewsService:
                 obj_in={"average_rating": await EventReviewsDao.avg_rating(session, event_id=event_id)}
             )
             await session.commit()
+            log.info("Review updated", extra={"user_id": str(user_id), "event_id": str(event_id), "rating": edit_event.rating})
         return db_edit_event
 
 
@@ -270,6 +290,7 @@ class EventReviewsService:
             db_event = await EventReviewsDao.find_one_or_none(session, user_id=user_id, event_id=event_id)
 
             if not db_event:
+                log.warning("Review not found for deletion", extra={"user_id": str(user_id), "event_id": str(event_id)})
                 raise HTTPException(status.HTTP_404_NOT_FOUND, detail="review not found")
 
             await EventReviewsDao.delete(session, id=db_event.id)
@@ -282,3 +303,4 @@ class EventReviewsService:
                         "count_reviews": await EventReviewsDao.count(session, event_id=event_id)}
             )
             await session.commit()
+            log.info("Review deleted", extra={"user_id": str(user_id), "event_id": str(event_id)})

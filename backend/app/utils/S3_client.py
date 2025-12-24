@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
+import logging
 
 from aiobotocore.session import get_session
 from types_aiobotocore_s3 import S3Client as S3ClientAnnotated
@@ -7,6 +8,8 @@ from botocore.exceptions import ClientError
 from fastapi import HTTPException, status
 
 from app.config import settings
+
+log = logging.getLogger(__name__)
 
 
 class S3Client:
@@ -39,6 +42,7 @@ class S3Client:
             object_name: str,
             content_type: str
     ) -> str:
+        log.info("Uploading file to S3", extra={"object_name": object_name, "content_type": content_type})
         try:
             async with self._get_client() as client:
                 await client.put_object(
@@ -47,9 +51,12 @@ class S3Client:
                     Body=file,
                     ContentType=content_type
                 )
-        except ClientError:
+            log.info("File uploaded to S3 successfully", extra={"object_name": object_name})
+        except ClientError as e:
+            log.error(f"S3 upload error: {str(e)}", extra={"object_name": object_name})
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="S3 upload error")
-        except Exception:
+        except Exception as e:
+            log.error(f"Unexpected S3 error: {str(e)}", extra={"object_name": object_name})
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Unexpected S3 error")
 
         return f"{self.endpoint_url}/{self.bucket_name}/{object_name}"
@@ -59,30 +66,38 @@ class S3Client:
             self,
             object_name: str
     ) -> bytes:
+        log.info("Downloading file from S3", extra={"object_name": object_name})
         try:
             async with self._get_client() as client:
                 response = await client.get_object(
                     Bucket=self.bucket_name,
                     Key=object_name
                 )
+                log.info("File downloaded from S3 successfully", extra={"object_name": object_name})
                 return await response["Body"].read()
 
         except ClientError as ex:
+            log.error(f"S3 download error: {str(ex)}", extra={"object_name": object_name})
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="S3 download error")
-        except Exception:
+        except Exception as e:
+            log.error(f"Unexpected S3 error: {str(e)}", extra={"object_name": object_name})
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Unexpected S3 error")
 
 
     async def delete_file(self, object_name: str) -> None:
+        log.info("Deleting file from S3", extra={"object_name": object_name})
         try:
             async with self._get_client() as client:
                 await client.delete_object(
                     Bucket=self.bucket_name,
                     Key=object_name
                 )
+            log.info("File deleted from S3 successfully", extra={"object_name": object_name})
         except ClientError as e:
+            log.error(f"S3 delete error: {str(e)}", extra={"object_name": object_name})
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="S3 delete error")
-        except Exception:
+        except Exception as e:
+            log.error(f"Unexpected S3 error: {str(e)}", extra={"object_name": object_name})
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Unexpected S3 error")
 
 
@@ -90,6 +105,7 @@ class S3Client:
         if not object_names:
             return
 
+        log.info("Deleting multiple files from S3", extra={"count": len(object_names)})
         try:
             async with self._get_client() as client:
                 delete_payload = {
@@ -100,12 +116,15 @@ class S3Client:
                     Bucket=self.bucket_name,
                     Delete=delete_payload
                 )
-        except ClientError:
+            log.info("Files deleted from S3 successfully", extra={"count": len(object_names)})
+        except ClientError as e:
+            log.error(f"S3 batch delete error: {str(e)}", extra={"count": len(object_names)})
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="S3 batch delete error"
             )
-        except Exception:
+        except Exception as e:
+            log.error(f"Unexpected S3 error: {str(e)}", extra={"count": len(object_names)})
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Unexpected S3 error"

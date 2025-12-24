@@ -1,0 +1,27 @@
+[project]
+name = "cityvibe"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "lorsan",email = "stasstrochewskij@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic-settings (>=2.12.0,<3.0.0)",
+    "sqlalchemy (>=2.0.45,<3.0.0)",
+    "celery[rabbitmq] (>=5.6.0,<6.0.0)",
+    "aioboto3 (>=15.5.0,<16.0.0)",
+    "fastapi[standard] (>=0.127.0,<0.128.0)",
+    "jwt (>=1.4.0,<2.0.0)",
+    "passlib (>=1.7.4,<2.0.0)",
+    "asyncpg (>=0.31.0,<0.32.0)",
+    "types-aiobotocore-s3 (>=3.0.0,<4.0.0)",
+    "pillow (>=12.0.0,<13.0.0)",
+    "colorlog (>=6.10.1,<7.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
