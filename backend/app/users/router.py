@@ -1,4 +1,5 @@
 import uuid
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, Response
@@ -9,6 +10,8 @@ from app.users.service import UserService, UserEventFavoritesService
 from app.users.schemas import User, UserUpdate, UserEventFavoritesCreate, UserEventFavorites
 from app.users.models import UserModel
 
+log = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/")
@@ -17,12 +20,14 @@ async def get_users_list(
         limit: int = 100,
         current_superuser_user: UserModel = Depends(get_current_superuser)
 ) -> List[User]:
+    log.info("Getting users list", extra={"offset": offset, "limit": limit})
     users_list = await UserService.get_users_list(offset=offset, limit=limit)
     return users_list
 
 
 @router.get("/me")
 async def get_current_user(current_user: UserModel = Depends(get_current_active_user)) -> User:
+    log.debug("Getting current user profile", extra={"user_id": str(current_user.id)})
     return current_user
 
 
@@ -39,6 +44,7 @@ async def delete_current_user(
         response: Response,
         current_user: UserModel = Depends(get_current_active_user)
 ):
+    log.info("User deleting their account", extra={"user_id": str(current_user.id), "email": current_user.email})
     response.delete_cookie('access_token')
     response.delete_cookie('refresh_token')
 
@@ -52,6 +58,7 @@ async def get_user(
         user_id: uuid.UUID,
         current_user: UserModel = Depends(get_current_superuser)
 ) -> User:
+    log.info("Superuser accessing user profile", extra={"target_user_id": str(user_id), "superuser_id": str(current_user.id)})
     return await UserService.get_user(user_id)
 
 @router.put("/{user_id}")
@@ -68,6 +75,7 @@ async def delete_user(
     user_id: uuid.UUID,
     current_user: UserModel = Depends(get_current_superuser)
 ):
+    log.info("Superuser deleting user", extra={"user_id": str(user_id), "superuser_id": str(current_user.id)})
     await UserService.delete_user_from_superuser(user_id)
     return {"message": "User was deleted"}
 

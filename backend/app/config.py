@@ -3,7 +3,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    HOST: str
+    PORT: int
+    URL: str
     MODE: Literal["DEV", "TEST", "PROD"]
+    LOG_LEVEL: Literal["ERROR", "WARNING", "INFO", "DEBUG"]
+    WORKERS: int
 
     DB_HOST: str
     DB_PORT: int
@@ -49,8 +54,6 @@ class Settings(BaseSettings):
     SMTP_PORT: int
     SMTP_EMAIL: str
     SMTP_PASSWORD: str
-
-    URL: str
 
     S3_URL: str
     S3_ACCESS_KEY_ID: str

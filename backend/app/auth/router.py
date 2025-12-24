@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, Request, Response, status, BackgroundTasks
 from fastapi.security import  OAuth2PasswordRequestForm
 
@@ -12,11 +13,14 @@ from app.tasks.email_tasks import send_verify_email_task
 from app.exceptions import InvalidCredentialsException
 from app.config import settings
 
+log = logging.getLogger(__name__)
+
 router = APIRouter(prefix='/auth', tags=['auth'])
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate) -> User:
+    log.info("User registration started", extra={"email": user.email})
     db_user = await UserService.register_new_user(user)
     token = AuthService.create_verify_email_token(user_id=db_user.id)
     send_verify_email_task.delay(
@@ -24,6 +28,7 @@ async def register(user: UserCreate) -> User:
         username=db_user.username,
         url=f"{settings.URL}/verify?token={token}"
     )
+    log.info("Registration email sent", extra={"email": db_user.email, "user_id": str(db_user.id)})
     return db_user
 
 
@@ -32,6 +37,7 @@ async def register(user: UserCreate) -> User:
 async def login(response:Response, credentials: OAuth2PasswordRequestForm = Depends()) -> Token:
     user = await AuthService.authenticate_user(credentials.username, credentials.password)
     if not user:
+        log.warning("Failed login attempt", extra={"email": credentials.username})
         raise InvalidCredentialsException
     token = await AuthService.create_token(user.id)
     response.set_cookie(
@@ -46,6 +52,7 @@ async def login(response:Response, credentials: OAuth2PasswordRequestForm = Depe
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 30 * 24 * 60,
         httponly=True
     )
+    log.info("User logged in", extra={"email": credentials.username, "user_id": str(user.id)})
     return token
 
 
@@ -59,6 +66,7 @@ async def logout(
     response.delete_cookie("refresh_token")
 
     await AuthService.logout(request.cookies.get("refresh_token"))
+    log.info("User logged out", extra={"user_id": str(user.id)})
     return {"message": "Logged out successfully"}
 
 
@@ -78,12 +86,14 @@ async def refresh_token(request: Request, response: Response) -> Token:
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 30 * 24 * 60,
         httponly=True,
     )
+    log.debug("Token refreshed via endpoint")
     return new_token
 
 
 @router.post("/verify")
 async def verify_user(token: str):
     await AuthService.verify_user(token)
+    log.info("Email verified successfully via token")
     return {"message": "email confirmed"}
 
 
